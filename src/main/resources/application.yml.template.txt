@@ -1,0 +1,75 @@
+server:
+  port: 
+  error:
+    include-message: 
+    include-binding-errors: 
+
+spring:
+  profiles:
+    active: dev
+
+  application:
+    name: 
+    version: 
+
+---
+spring:
+  config:
+    activate:
+      on-profile: 
+  datasource:
+    url: 
+    username: 
+    password:
+    driver-class-name:
+  jpa:
+    hibernate:
+      ddl-auto: 
+    properties:
+      hibernate:
+        dialect: 
+        format_sql: 
+    show-sql:
+  mail:
+    host: 
+    port: 
+    username: 
+    password: 
+    properties:
+      mail:
+        smtp:
+          auth: 
+          starttls:
+            enable: 
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 
+            client-secret: 
+            scope:
+
+app:
+  email: 
+  verify_duration: 
+  jwt_key:
+
+---
+spring:
+  config:
+    activate:
+      on-profile: 
+  datasource:
+    url: 
+    username: 
+    password: 
+    driver-class-name:
+  jpa:
+    hibernate:
+      ddl-auto: 
+    properties:
+      hibernate:
+        dialect: 
+        format_sql: 
+    show-sql: 
