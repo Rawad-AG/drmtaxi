@@ -53,6 +53,8 @@ spring:
 app:
   email: 
   verify_duration: 
+  access_token_duration: 
+  refresh_token_duration: 
   jwt_key:
 
 ---

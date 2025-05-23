@@ -1,9 +1,13 @@
 package com.drmtaxi.drm_taxi.Entities;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.annotations.UpdateTimestamp;
+
 import com.drmtaxi.drm_taxi.Utils.UserRoles;
+
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -13,72 +17,120 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Setter
+@Getter
 @NoArgsConstructor
-@Data
 @Entity(name = "Auth")
 @Table(name = "auths")
 public class AuthEntity {
-
-    @Id
+    @jakarta.persistence.Id
     @SequenceGenerator(name = "auth_id_sequence", sequenceName = "auth_id_sequence", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "auth_id_sequence")
     private Long id;
 
-
     @OneToOne(optional = false)
-    @JoinColumn(name = "user_id",referencedColumnName = "id", unique = true, nullable = false)
+    @JoinColumn(name = "user_id")
     private UserEntity user;
-    
-    @Column(nullable = false)
-    private String password;
-    private LocalDateTime passwordUpdatedAt;
 
-
-    @ElementCollection(targetClass = UserRoles.class, fetch = FetchType.EAGER)
-    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name= "user_id"))    
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "auth_id"))
+    @Column(name = "role")
     @Enumerated(EnumType.STRING)
     private List<UserRoles> roles;
 
+    private boolean enable = false;
 
-    @Column(nullable = false)
-    private Boolean enabled = false;
+    private boolean locked = false;
+    private String lockedFor;
 
-    @Column(nullable = false)
-    private Boolean locked = false;
+    private String password;
+    private String prevPassword;
+    private Instant passwordUpdatedAt = Instant.now();
+    private String passwordResetUUID;
+    private Instant passwordResetUUIDExpiresAt;
 
-    @Column(nullable = false)
-    private Boolean credintialsExpired = false;
+    private double tokensVersion = 1;
 
+    private String accountVerificationUUID;
+    private Instant accountVerificationUUIDExpiresAt;
 
-    //Email Verification
-    private String emailVerificationToken;
-    private LocalDateTime emailVerificationTokenExpiresAt;
-    private LocalDateTime emailVerificationTokenInitiatedAt;
+    @UpdateTimestamp
+    private Instant updatedAt;
 
-
-    //Phone number Verification
-    private String phoneVerificationToken;
-    private LocalDateTime phoneVerificationTokenExpiresAt;
-    private LocalDateTime phoneVerificationTokenInitiatedAt;
-
-    //Forget Password Verification
-    private String forgetPasswordToken;
-    private LocalDateTime forgetPasswordTokenExpiresAt;
-
-    public AuthEntity(UserEntity user, String password, List<UserRoles> roles) {
-        this.user = user;
-        this.password = password;
-        this.passwordUpdatedAt = LocalDateTime.now();
-        this.roles = roles;
+    @PrePersist
+    protected void onCreate() {
+        prevPassword = password;
     }
 
-    
+    @PreUpdate
+    protected void onUpdate() {
+        if (!prevPassword.equals(password)) {
+            passwordUpdatedAt = Instant.now();
+            prevPassword = password;
+        }
+    }
+
+    public AuthEntity(UserEntity user, String password) {
+        this.user = user;
+        this.password = password;
+        this.prevPassword = password;
+        this.enable = false;
+        this.locked = false;
+        this.roles = new ArrayList<>();
+        roles.add(UserRoles.USER);
+    }
+
+    public AuthEntity(UserEntity user, String password, boolean isDriver) {
+        this.user = user;
+        this.password = password;
+        this.prevPassword = password;
+        this.enable = false;
+        this.locked = false;
+        if (isDriver) {
+            this.roles = new ArrayList<>();
+            roles.add(UserRoles.DRIVER);
+        } else {
+            this.roles = new ArrayList<>();
+            roles.add(UserRoles.USER);
+        }
+    }
+
+    public void setPassword(String newPass) {
+        this.password = newPass;
+        this.prevPassword = newPass;
+        this.updatedAt = Instant.now();
+        this.passwordUpdatedAt = Instant.now();
+    }
+
+    public void setPasswordResetUUID(String token, long expiresAfter) {
+        this.passwordResetUUID = token;
+        this.passwordResetUUIDExpiresAt = Instant.now().plusMillis(expiresAfter);
+    }
+
+    public void setAccountVerificationUUID(String token, long expiresAfter) {
+        this.accountVerificationUUID = token;
+        this.accountVerificationUUIDExpiresAt = Instant.now().plusMillis(expiresAfter);
+    }
+
+    @Override
+    public String toString() {
+        return "AuthEntity [user=" + user.getFirstName() + " " + user.getLastName()
+                + ", id=" + id
+                + ", roles=" + roles
+                + ", enable=" + enable
+                + ", locked=" + locked
+                + ", lockedFor=" + lockedFor
+                + ", updatedAt=" + updatedAt + "]";
+    }
+
 }

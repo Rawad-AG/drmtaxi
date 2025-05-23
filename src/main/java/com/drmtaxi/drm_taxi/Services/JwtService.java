@@ -16,7 +16,7 @@ public class JwtService {
 
     private final SecretKey SECRET_KEY;
 
-    public String sign(Claims claims, String subject, int expires) {
+    public String sign(Claims claims, String subject, long expires) {
         return Jwts.builder()
                 .claims(claims)
                 .subject(subject)
@@ -26,7 +26,7 @@ public class JwtService {
                 .compact();
     }
 
-    public String sign(String subject, int expires) {
+    public String sign(String subject, long expires) {
         return Jwts.builder()
                 .subject(subject)
                 .issuedAt(new Date())
@@ -49,6 +49,4 @@ public class JwtService {
         }
     }
 
-
 }
-

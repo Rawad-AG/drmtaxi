@@ -1,27 +1,19 @@
 package com.drmtaxi.drm_taxi.DTOs;
 
-import java.time.LocalDate;
+import java.time.Instant;
+
+import com.drmtaxi.drm_taxi.Utils.Gender;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
-import jakarta.validation.constraints.Size;
-
 
 public record UserInfoDTO(
-    @NotBlank(message = "username is required")
-    String username,
-
-    @NotBlank
-    @Size(min = 8, message = "Password must have at least 8 characters")
-    String password,
-
-    @NotBlank(message = "first name is required")
-    String firstName,
-
-    String LastName,
-
-    @Past(message = "invalid birth date")
-    LocalDate birthDate
-) {
-    
+                @NotNull Long id,
+                @NotBlank String firstName,
+                String lastName,
+                @NotBlank String username,
+                boolean isDriver,
+                @NotNull @Past Instant createdAt,
+                @NotNull Gender gender) {
 }

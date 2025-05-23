@@ -10,14 +10,18 @@ import org.springframework.security.core.userdetails.UserDetails;
 import com.drmtaxi.drm_taxi.Entities.UserEntity;
 import lombok.AllArgsConstructor;
 
-
 @AllArgsConstructor
-public class AppUser implements UserDetails{
+public class AppUser implements UserDetails {
     private final UserEntity user;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return this.user.getAuth().getRoles().stream().map(role-> new SimpleGrantedAuthority(role.name())).collect(Collectors.toList());
+        return this.user.getAuth().getRoles().stream().map(role -> new SimpleGrantedAuthority(role.name()))
+                .collect(Collectors.toList());
+    }
+
+    public double getTokenVersion() {
+        return this.user.getAuth().getTokensVersion();
     }
 
     @Override
@@ -27,27 +31,27 @@ public class AppUser implements UserDetails{
 
     @Override
     public String getUsername() {
-        if(this.user.getEmail() != null && !this.user.getEmail().isEmpty()) return this.user.getEmail();
-        return this.user.getPhoneNumber();
+        return this.user.getUsername();
     }
 
     @Override
     public boolean isAccountNonExpired() {
-        return !this.user.getDeleted();
+        return !this.user.isDeleted();
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        return !this.user.getAuth().getLocked();
+        return !this.user.getAuth().isLocked();
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return !this.user.getAuth().getCredintialsExpired();
+        return true;
     }
 
     @Override
     public boolean isEnabled() {
-        return this.user.getAuth().getEnabled();
+        return this.user.getAuth().isEnable() &&
+                (!this.user.isDriver() || (this.user.isDriver() && this.user.getDriverInfo().isInWork()));
     }
 }

@@ -5,18 +5,26 @@ import org.springframework.stereotype.Component;
 
 import lombok.Setter;
 
-
 @Component
 @Setter
 @ConfigurationProperties(prefix = "app")
 public class PropertiesProvider {
-    private int verify_duration;
+    private long verify_duration;
+    private long access_token_duration;
+    private long refresh_token_duration;
     private String email;
     private String jwt_key;
 
-
-    public int verifyDuration() {
+    public long verifyDuration() {
         return verify_duration;
+    }
+
+    public long accessTokenDuration() {
+        return access_token_duration;
+    }
+
+    public long refreshTokenDuration() {
+        return refresh_token_duration;
     }
 
     public String email() {
@@ -26,9 +34,5 @@ public class PropertiesProvider {
     public String jwtKey() {
         return jwt_key;
     }
-
-    
-    
-    
 
 }
