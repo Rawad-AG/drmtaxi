@@ -118,7 +118,7 @@ public class AuthController {
     public ResponseEntity<SuccessResponse> logout(HttpServletRequest req) {
         String token = getRefreshToken(req);
         service.logout(token);
-        return ResponseEntity.status(HttpStatus.OK).body(new SuccessResponse(""));
+        return ResponseEntity.status(HttpStatus.OK).body(new SuccessResponse("logged out successfully"));
     }
 
     private String getRefreshToken(HttpServletRequest req) {
