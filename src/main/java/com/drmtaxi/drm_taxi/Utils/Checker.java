@@ -4,7 +4,7 @@ import com.google.i18n.phonenumbers.PhoneNumberUtil;
 
 import java.util.regex.Pattern;
 
-import com.drmtaxi.drm_taxi.Exceptions.exceptions.BadInputsException;
+import com.drmtaxi.drm_taxi.Exceptions.exceptions.auth.InvalidPhoneNumberException;
 import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.Phonenumber;
 
@@ -28,6 +28,8 @@ public class Checker {
     }
 
     public static String parsePhoneNumber(String number) {
+        if (number == null)
+            return null;
         number = number.trim();
         if (number.startsWith("+963"))
             return number.replace("+", "");
@@ -35,7 +37,7 @@ public class Checker {
             return number;
         if (number.startsWith("09"))
             return number.replace("09", "9639");
-        throw new BadInputsException(Messager.incorrectUsername(number));
+        throw new InvalidPhoneNumberException();
 
     }
 }

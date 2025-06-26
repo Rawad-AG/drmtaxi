@@ -39,7 +39,7 @@ public class EmailService {
     @Async
     public void sendVerifyToken(String to, String token, Long id) throws MessagingException {
         try {
-            String verifyLink = "http://localhost:8080/api/v1/auth/verifyAccount?token=" + token + "&id=" + id;
+            String verifyLink = "http://localhost:8080/api/v1/auth/verify/email?token=" + token + "&id=" + id;
 
             String message = "<!DOCTYPE html>" +
                     "<html>" +
@@ -113,6 +113,23 @@ public class EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "utf-8");
             helper.setText(message, true);
             helper.setTo(to);
+            helper.setSubject("verify your email");
+            helper.setFrom(FROM);
+            mailSender.send(mimeMessage);
+        } catch (MessagingException e) {
+            System.out.println(e.getMessage());
+            throw e;
+        }
+    }
+
+    @Async
+    public void sendVerifyCode(String phoneNumber, int code, Long id) throws MessagingException {
+        try {
+
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "utf-8");
+            helper.setText(code + "", false);
+            helper.setTo(phoneNumber);
             helper.setSubject("verify your email");
             helper.setFrom(FROM);
             mailSender.send(mimeMessage);

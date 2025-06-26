@@ -2,6 +2,7 @@ package com.drmtaxi.drm_taxi.Security.Config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -19,7 +20,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.drmtaxi.drm_taxi.Security.JwtFilter;
-import com.drmtaxi.drm_taxi.Utils.UserRoles;
+import com.drmtaxi.drm_taxi.Utils.Roles;
 
 import lombok.AllArgsConstructor;
 
@@ -29,15 +30,33 @@ public class SecurityConfig {
     private final JwtFilter jwtFilter;
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    @Order(1)
+    SecurityFilterChain sensitiveOperationsSecurityFilterChain(HttpSecurity http) throws Exception {
         http
+                .securityMatcher("/auth/delete")
+                .authorizeHttpRequests(authorize -> authorize
+                        .anyRequest().authenticated())
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .formLogin(form -> form.disable())
+                .oauth2Login(oauth -> oauth.disable())
+                .httpBasic(Customizer.withDefaults());
+
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
+    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .formLogin(form -> form.disable())
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/v1/auth/**").permitAll()
-                        .requestMatchers("/api/v1/open/**").permitAll()
-                        .requestMatchers("/api/v1/admin/**").hasRole(UserRoles.ADMIN.toString())
+                        .requestMatchers("/api/v1/auth/**", "/api/v1/open/**").permitAll()
+                        .requestMatchers("/api/v1/admin/**").hasRole(Roles.ADMIN.toString())
+                        .requestMatchers("/api/v1/client/**").hasRole(Roles.CLIENT.toString())
+                        .requestMatchers("/api/v1/driver/**").hasRole(Roles.DRIVER.toString())
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults())
                 .oauth2Login(Customizer.withDefaults())

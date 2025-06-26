@@ -13,10 +13,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.drmtaxi.drm_taxi.Services.JwtService;
-import com.drmtaxi.drm_taxi.Utils.Messager;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
@@ -29,32 +29,58 @@ public class JwtFilter extends OncePerRequestFilter {
     private final AppUserService appUserService;
 
     @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) throws ServletException {
+        return request.getServletPath().toString().startsWith("/api/v1/auth/") ||
+                request.getServletPath().toString().startsWith("/api/v1/open/");
+    }
+
+    @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
         String authHeader = request.getHeader("Authorization");
         String token = null;
         String username = null;
-        double version = -1;
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+        Integer version = -165464;
+
+        if (authHeader == null) {
+            String authCookie = "none";
+            Cookie[] cookies = request.getCookies();
+
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    System.out.println("cookie.getName() = " + cookie.getName());
+                    if (cookie.getName().equals("actn")) {
+                        authCookie = cookie.getValue();
+                        break;
+                    }
+                }
+            }
+
+            token = authCookie.replace("Bearer ", "");
+        } else if (authHeader.startsWith("Bearer ")) {
             token = authHeader.replace("Bearer ", "");
+        }
+        System.out.println("token = " + token);
+        if (token != null) {
             try {
                 Map<String, Object> payload = jwt.verify(token);
-                System.out.println("payload = " + payload);
                 username = (String) payload.get("sub");
-                version = (double) payload.get("version");
-                System.out.println("payload.get(\"version\") = " + payload.get("version"));
+                System.out.println("=====================================================================");
+                version = (Integer) payload.get("version");
+                System.out.println("version = " + version);
             } catch (Exception ignored) {
             }
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = appUserService.loadUserByUsername(username);
+            System.out.println("userDetails = " + userDetails);
             double storedVersion = userDetails instanceof AppUser ? ((AppUser) userDetails).getTokenVersion()
-                    : 0;
-            System.out.println("storedVersion = " + storedVersion);
+                    : -1;
             System.out.println("version = " + version);
+            System.out.println("storedVersion = " + storedVersion);
             if (storedVersion != version)
-                throw new JwtException(Messager.invalidToken());
+                throw new JwtException("invalid token");
             UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null,
                     userDetails.getAuthorities());
             authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

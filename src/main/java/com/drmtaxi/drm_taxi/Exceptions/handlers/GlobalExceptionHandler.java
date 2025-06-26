@@ -1,6 +1,5 @@
 package com.drmtaxi.drm_taxi.Exceptions.handlers;
 
-
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,7 +17,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.drmtaxi.drm_taxi.Configs.EnvironmentChecker;
 import com.drmtaxi.drm_taxi.DTOs.ErrorResponse;
-import com.drmtaxi.drm_taxi.Utils.Messager;
+import com.drmtaxi.drm_taxi.Exceptions.exceptions.AppException;
 import io.jsonwebtoken.JwtException;
 
 @Slf4j
@@ -28,42 +27,45 @@ public class GlobalExceptionHandler {
 
     private final EnvironmentChecker env;
 
-
     @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<ErrorResponse> handleRouteNotFoundException(NoResourceFoundException e){
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(HttpStatus.NOT_FOUND, Messager.routeNotFound("")));
-    }
-    
-    @ExceptionHandler(JwtException.class)
-    public ResponseEntity<ErrorResponse> handleJwtException(JwtException e){
-        String message = env.isDevelopment() ? e.getMessage() : Messager.invalidToken();
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErrorResponse(HttpStatus.UNAUTHORIZED, message));    
-    }
-    
-    @ExceptionHandler(UsernameNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleUsernameNotFoundException(UsernameNotFoundException e){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage()));    
+    public ResponseEntity<ErrorResponse> handleRouteNotFoundException(NoResourceFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(HttpStatus.NOT_FOUND, "route not found"));
     }
 
+    @ExceptionHandler(JwtException.class)
+    public ResponseEntity<ErrorResponse> handleJwtException(JwtException e) {
+        String message = env.isDevelopment() ? e.getMessage() : "invalid token";
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErrorResponse(HttpStatus.UNAUTHORIZED, message));
+    }
+
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUsernameNotFoundException(UsernameNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage()));
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException e) {
         ArrayList<String> errors = new ArrayList<>();
         e.getBindingResult().getFieldErrors().stream()
-        .map(fieldError -> errors.add(fieldError.getField() + ": " + fieldError.getDefaultMessage()))
-        .collect(Collectors.toList());
+                .map(fieldError -> errors.add(fieldError.getField() + ": " + fieldError.getDefaultMessage()))
+                .collect(Collectors.toList());
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(HttpStatus.BAD_REQUEST, errors));
     }
-    
-    
+
+    @ExceptionHandler(AppException.class)
+    public ResponseEntity<ErrorResponse> handleAppException(AppException e) {
+        HttpStatus code = getStatusCode(e);
+        return ResponseEntity.status(code).body(new ErrorResponse(code, e.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUncaughtExceptions(Exception e) {
-        log.error("error: ", e);
         HttpStatus code = getStatusCode(e);
-        String message = env.isDevelopment() ? e.getMessage() : "An unexpected error occurred";
 
-        return ResponseEntity.status(code).body(new ErrorResponse(code, message));
+        return ResponseEntity.status(code).body(new ErrorResponse(code, e.getMessage()));
     }
 
     private HttpStatus getStatusCode(Exception e) {

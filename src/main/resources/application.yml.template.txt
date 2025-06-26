@@ -52,10 +52,17 @@ spring:
 
 app:
   email: 
-  verify_duration: 
-  access_token_duration: 
-  refresh_token_duration: 
+  verify_duration:
+  verify_lock_duration:
+  verify_lock_message: 
+  verify_attempts: 
+  login_lock_duration:
+  login_lock_message:
+  login_attempts: 
+  access_token_duration:
+  refresh_token_duration:
   jwt_key:
+
 
 ---
 spring:
@@ -75,3 +82,16 @@ spring:
         dialect: 
         format_sql: 
     show-sql: 
+
+app:
+  email: 
+  verify_duration:
+  verify_lock_duration:
+  verify_lock_message: 
+  verify_attempts: 
+  login_lock_duration:
+  login_lock_message:
+  login_attempts: 
+  access_token_duration:
+  refresh_token_duration:
+  jwt_key:

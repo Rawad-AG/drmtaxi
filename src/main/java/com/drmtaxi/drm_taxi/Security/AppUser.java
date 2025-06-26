@@ -16,12 +16,12 @@ public class AppUser implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return this.user.getAuth().getRoles().stream().map(role -> new SimpleGrantedAuthority(role.name()))
+        return this.user.getAuth().getRoles().stream().map(role -> new SimpleGrantedAuthority(role.toString()))
                 .collect(Collectors.toList());
     }
 
-    public double getTokenVersion() {
-        return this.user.getAuth().getTokensVersion();
+    public Integer getTokenVersion() {
+        return this.user.getAuth().getAccessTokenVersion();
     }
 
     @Override
@@ -36,7 +36,7 @@ public class AppUser implements UserDetails {
 
     @Override
     public boolean isAccountNonExpired() {
-        return !this.user.isDeleted();
+        return !this.user.getAuth().isDeleted();
     }
 
     @Override
@@ -51,7 +51,7 @@ public class AppUser implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return this.user.getAuth().isEnable() &&
+        return this.user.getAuth().isEnabled() &&
                 (!this.user.isDriver() || (this.user.isDriver() && this.user.getDriverInfo().isInWork()));
     }
 }

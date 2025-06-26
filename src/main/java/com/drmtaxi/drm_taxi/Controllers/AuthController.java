@@ -11,13 +11,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.drmtaxi.drm_taxi.DTOs.LoginDTO;
-import com.drmtaxi.drm_taxi.DTOs.SignupDriverDTO;
-import com.drmtaxi.drm_taxi.DTOs.SignupUserDTO;
+import com.drmtaxi.drm_taxi.Configs.PropertiesProvider;
 import com.drmtaxi.drm_taxi.DTOs.SuccessResponse;
+import com.drmtaxi.drm_taxi.DTOs.auth.ClientSignupReqDTO;
+import com.drmtaxi.drm_taxi.DTOs.auth.DriverSignupReqDTO;
+import com.drmtaxi.drm_taxi.DTOs.auth.LoginReqDTO;
+import com.drmtaxi.drm_taxi.DTOs.auth.PhoneNumberVerificationReqDTO;
+import com.drmtaxi.drm_taxi.DTOs.auth.UsernameDTO;
 import com.drmtaxi.drm_taxi.Services.UserService;
-import com.drmtaxi.drm_taxi.Utils.Messager;
+import com.drmtaxi.drm_taxi.Utils.Checker;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 
@@ -25,49 +31,110 @@ import lombok.AllArgsConstructor;
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
+
     private final UserService service;
+    private final PropertiesProvider provider;
 
-    @PostMapping("/user/signup")
-    public ResponseEntity<SuccessResponse> userSignup(@Valid @RequestBody SignupUserDTO user) {
-        service.signupUser(user);
-        return ResponseEntity.status(HttpStatus.CREATED).body(new SuccessResponse("null"));
+    @PostMapping("/register-client")
+    public ResponseEntity<SuccessResponse> registerClient(@Valid @RequestBody ClientSignupReqDTO user) {
+        service.registerClient(user);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new SuccessResponse("user registered successfully"));
     }
 
-    @PostMapping("/driver/signup")
-    public ResponseEntity<SuccessResponse> driverSignup(@Valid @RequestBody SignupDriverDTO driver) {
-        service.signupDriver(driver);
-        return ResponseEntity.status(HttpStatus.CREATED).body(new SuccessResponse("null"));
+    @PostMapping("/register-driver")
+    public ResponseEntity<SuccessResponse> registerDriver(@Valid @RequestBody DriverSignupReqDTO driver) {
+        service.registerDriver(driver);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new SuccessResponse("your account registered successfully"));
     }
 
-    @GetMapping("/verifyAccount")
-    public ResponseEntity<SuccessResponse> verifyAccount(@RequestParam String token,
-            @RequestParam(required = false) String username) {
-        service.verifyAccound(token, username);
-
-        return ResponseEntity.status(HttpStatus.OK).body(new SuccessResponse("null"));
+    @GetMapping("/verify/email")
+    public ResponseEntity<SuccessResponse> verifyEmail(@RequestParam String token, @RequestParam int id) {
+        service.verifyEmail(token, id);
+        return ResponseEntity.status(HttpStatus.OK).body(new SuccessResponse("email virified successfully"));
     }
 
-    @GetMapping("/verifyAccount/resend")
-    public ResponseEntity<SuccessResponse> resendAccountVerificationToken(@RequestParam("username") String username) {
-        return ResponseEntity.status(HttpStatus.OK).body(new SuccessResponse("null"));
+    @PostMapping("/verify/phone")
+    public ResponseEntity<SuccessResponse> verifyPhoneNumber(@RequestBody PhoneNumberVerificationReqDTO req) {
+        service.verifyPhoneNumber(req.code(), Checker.parsePhoneNumber(req.phoneNumber()));
+        return ResponseEntity.status(HttpStatus.OK).body(new SuccessResponse("account verified successfully"));
+    }
+
+    @PostMapping("/verify/resend")
+    public ResponseEntity<SuccessResponse> resendVerification(@RequestBody UsernameDTO username) {
+        service.resendAccountVerification(username);
+        return ResponseEntity.status(HttpStatus.OK).body(new SuccessResponse(""));
+    }
+
+    @PostMapping("/password/forget")
+    public ResponseEntity<SuccessResponse> forgetPassword() {
+        return ResponseEntity.status(HttpStatus.OK).body(new SuccessResponse(""));
+    }
+
+    @PostMapping("/password/verify")
+    public ResponseEntity<SuccessResponse> verifyResetPasswordCode() {
+        return ResponseEntity.status(HttpStatus.OK).body(new SuccessResponse(""));
+    }
+
+    @PostMapping("/password/reset")
+    public ResponseEntity<SuccessResponse> resetPassword() {
+        return ResponseEntity.status(HttpStatus.OK).body(new SuccessResponse(""));
+    }
+
+    @PostMapping("/password/change")
+    public ResponseEntity<SuccessResponse> changePassword() {
+        return ResponseEntity.status(HttpStatus.OK).body(new SuccessResponse(""));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<SuccessResponse> login(@RequestBody LoginDTO credintials) {
-        String token = service.login(credintials);
-        return ResponseEntity.status(HttpStatus.OK).body(new SuccessResponse(null, Map.of("token", token)));
+    public ResponseEntity<SuccessResponse> login(@Valid @RequestBody LoginReqDTO req, HttpServletResponse res) {
+        String token = service.login(req);
+
+        Cookie cookie = new Cookie("rtn", token);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        cookie.setSecure(false);
+        cookie.setMaxAge((int) provider.refreshTokenDuration());
+        res.addCookie(cookie);
+
+        return ResponseEntity.status(HttpStatus.OK).body(new SuccessResponse("", Map.of("refreshToken", token)));
     }
 
     @GetMapping("/refresh")
-    public ResponseEntity<SuccessResponse> getAccessToken(@RequestParam String token) {
-        String accessToken = service.getAccessToken(token);
-        return ResponseEntity.status(HttpStatus.OK).body(new SuccessResponse(null, Map.of("token", accessToken)));
+    public ResponseEntity<SuccessResponse> refresh(HttpServletRequest req, HttpServletResponse res) {
+        String refreshToken = getRefreshToken(req);
+        String accessToken = service.getAccessToken(refreshToken);
+
+        Cookie cookie = new Cookie("actn", accessToken);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        cookie.setSecure(false);
+        cookie.setMaxAge((int) provider.accessTokenDuration());
+        res.addCookie(cookie);
+        return ResponseEntity.status(HttpStatus.OK).body(new SuccessResponse("", Map.of("accessToken", accessToken)));
     }
 
     @GetMapping("/logout")
-    public ResponseEntity<SuccessResponse> logout(@RequestParam String token) {
+    public ResponseEntity<SuccessResponse> logout(HttpServletRequest req) {
+        String token = getRefreshToken(req);
         service.logout(token);
-        return ResponseEntity.status(HttpStatus.OK).body(new SuccessResponse(Messager.logout()));
+        return ResponseEntity.status(HttpStatus.OK).body(new SuccessResponse(""));
+    }
+
+    private String getRefreshToken(HttpServletRequest req) {
+        String token = req.getHeader("Authorization");
+        if (token != null && token.startsWith("Bearer ")) {
+            return token.substring("Bearer ".length());
+
+        }
+
+        for (Cookie cookie : req.getCookies()) {
+            if (cookie.getName().equals("rtn")) {
+                return cookie.getValue();
+            }
+        }
+
+        return null;
     }
 
 }

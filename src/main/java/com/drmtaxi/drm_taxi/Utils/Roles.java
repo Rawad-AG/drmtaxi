@@ -1,7 +1,7 @@
 package com.drmtaxi.drm_taxi.Utils;
 
-public enum UserRoles {
+public enum Roles {
     ADMIN,
-    USER,
+    CLIENT,
     DRIVER;
 }

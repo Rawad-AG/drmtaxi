@@ -32,8 +32,12 @@ cd drmtaxi
 
 ### 4. Build with Maven
 
+```bash
 mvn clean package
+```
 
 ### 5. Run application
 
+```bash
 java -jar target/drmtaxi-0.0.1-SNAPSHOT.jar
+```
